@@ -97,4 +97,23 @@ describe('remendWorklet', () => {
     expect(worklets.scheduleOnRuntime).toHaveBeenCalledTimes(1);
     expect(worklets.scheduleOnRN).not.toHaveBeenCalled();
   });
+
+  it('runs remend on the JS thread when forceJsThread is set', () => {
+    const { processRemendInWorklet } = loadModule('ios');
+    const onComplete = jest.fn();
+
+    processRemendInWorklet('hello', onComplete, undefined, true);
+
+    expect(worklets.scheduleOnRuntime).not.toHaveBeenCalled();
+    expect(onComplete).toHaveBeenCalledWith('remended:hello');
+  });
+
+  it('still uses the worklet runtime when forceJsThread is not set', () => {
+    const { processRemendInWorklet } = loadModule('ios');
+
+    processRemendInWorklet('hello', jest.fn());
+
+    expect(worklets.scheduleOnRuntime).toHaveBeenCalledTimes(1);
+    expect(worklets.scheduleOnRN).not.toHaveBeenCalled();
+  });
 });

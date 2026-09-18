@@ -16,8 +16,19 @@ const { processRemendInWorklet } = jest.requireMock(
   processRemendInWorklet: jest.Mock;
 };
 
-function Consumer({ markdown, config }: { markdown: string; config: unknown }) {
-  useStreamdownMarkdown(markdown, { remendConfig: config as never });
+function Consumer({
+  markdown,
+  config,
+  forceJsThread,
+}: {
+  markdown: string;
+  config: unknown;
+  forceJsThread?: boolean;
+}) {
+  useStreamdownMarkdown(markdown, {
+    remendConfig: config as never,
+    forceJsThread,
+  });
   return null;
 }
 
@@ -51,5 +62,27 @@ describe('useStreamdownMarkdown', () => {
       renderer.update(<Parent markdown="hi there" />);
     });
     expect(processRemendInWorklet).toHaveBeenCalledTimes(2);
+  });
+
+  it('reprocesses the current markdown when forceJsThread changes', () => {
+    const Parent = ({ force }: { force: boolean }) => (
+      <Consumer markdown="hi" config={undefined} forceJsThread={force} />
+    );
+
+    let renderer!: TestRenderer.ReactTestRenderer;
+    act(() => {
+      renderer = TestRenderer.create(<Parent force={false} />);
+    });
+    expect(processRemendInWorklet).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      renderer.update(<Parent force={true} />);
+    });
+    expect(processRemendInWorklet).toHaveBeenLastCalledWith(
+      'hi',
+      expect.any(Function),
+      undefined,
+      true
+    );
   });
 });
